@@ -237,8 +237,8 @@ async function encryptPayload(plain: string, secret: string): Promise<EncryptedP
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
 
-  const supabaseUrl = (Deno.env.get("SUPABASE_URL") || "").replace(/\/$/, "");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  const supabaseUrl = (Deno.env.get("SITE_SUPABASE_URL") || Deno.env.get("SUPABASE_URL") || "").replace(/\/$/, "");
+  const serviceKey = Deno.env.get("SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
   if (!supabaseUrl || !serviceKey) return json({ ok: false, error: "Supabase 环境缺失。" }, 503);
 
   const restHeaders = {
@@ -707,7 +707,7 @@ Deno.serve(async (request: Request) => {
       // 在线开关每分钟到期任务扫描（与微信云函数的在线开关同一套做法）。
       const body = await request.json().catch(() => ({})) as { enable?: unknown };
       const enable = body.enable === true;
-      const dbUrl = Deno.env.get("SUPABASE_DB_URL") || "";
+      const dbUrl = Deno.env.get("SITE_SUPABASE_DB_URL") || Deno.env.get("SUPABASE_DB_URL") || "";
       if (!dbUrl) {
         return json({ ok: false, error: "当前环境读不到数据库连接串，无法在线开关定时任务。" }, 500);
       }
@@ -715,7 +715,7 @@ Deno.serve(async (request: Request) => {
       const sql = postgres(dbUrl, { prepare: false });
       try {
         if (enable) {
-          const supabaseUrl = (Deno.env.get("SUPABASE_URL") || "").replace(/\/$/, "");
+          const supabaseUrl = (Deno.env.get("SITE_SUPABASE_URL") || Deno.env.get("SUPABASE_URL") || "").replace(/\/$/, "");
           await sql.unsafe("create extension if not exists pg_cron");
           await sql.unsafe("create extension if not exists pg_net");
           await sql.unsafe(`select cron.schedule('ai-phone-personal-push-jobs-scan', '* * * * *', $CRON$
